@@ -4,23 +4,36 @@ import subprocess
 import getpass
 
 app         = Flask(__name__)
-usbip       = "/usr/bin/usbip"
-usbipd      = "/usr/bin/usbipd"
+usbip       = "usbip"
+usbipd      = "usbipd"
 modprobe    = "/sbin/modprobe"
 reboot      = "/sbin/reboot"
 pidfile     = "/var/run/usbipd.pid"
 
-def call(cmd):
-    return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
+class Settings(Flask):
+    device_id   = False
 
+def call(cmd):
+    return subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+
+def load_module(name):
+    try:
+        call([modprobe, name])
+    except subprocess.CalledProcessError as error:
+	print("error loading kernel module %(output)s" % error.output)
+        
 
 @app.before_first_request
 def setup():
-    call([modprobe, "usbip-core"])
-    call([modprobe, "usbip-host"])
-    process = subprocess.Popen(usbipd + "-d")
-    open(pidfile, 'w').write(str(process.pid)).close()
-
+    print "loading..."
+    load_module("usbip-core")
+    load_module("usbip-host")    
+    print "starting daemon.."
+    process = subprocess.Popen([usbipd, "-D"])
+    open(pidfile, 'w').write(str(process.pid))
+    Settings.device_id = open("./conf/device").read().strip()
+    print Settings.device_id
+    print "....done!"
 
 def shutdown():
     pid = int(open(pidfile).read())
@@ -39,28 +52,33 @@ def index():
 
 @app.route("/list")
 def list():
-    print(call([usbip, "list", " -l"]))
+    return call([usbip, "list", "-l"])
 
 @app.route("/attach")
 def attach():
-    print(call([usbip, "bind", "-b", "$(cat conf/device)"]))
+    return call([usbip, "bind", "-b", Settings.device_id])
 
 @app.route("/detach")
 def detach():
-    print(call([usbip, "unbind", "-b", "$(cat conf/device)"]))
+    return call([usbip, "unbind", "-b", Settings.device_id])
 
 @app.route("/reboot")
 def reboot():
-    print(call([reboot]))
+    return call([reboot])
 
 @app.route("/status")
 def status():
-    print(call([usbip, "list", "--remote", "localhost"]))
+    return call([usbip, "list", "--remote", "localhost"])
+
+@app.route("/device")
+def device():
+    return "selected device: " + Settings.device_id
 
 @app.errorhandler(subprocess.CalledProcessError)
 def handle_invalid_usage(error):
     response = jsonify(
         output=error.output,
+	cmd=error.cmd,
         returncode=error.returncode)
     return response
 
