@@ -1,6 +1,7 @@
 from flask import Flask
 from flask import jsonify
 import subprocess
+import getpass
 
 app         = Flask(__name__)
 usbip       = "/usr/bin/usbip"
@@ -68,4 +69,7 @@ def internal_error(error):
     return "error: " + str(error)
 
 if __name__ == "__main__":
-    app.run()
+    if getpass.getuser() == "root":
+        app.run(host= '0.0.0.0')
+    else:
+        print "Server must be run as root for now!"
