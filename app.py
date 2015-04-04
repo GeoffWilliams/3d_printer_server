@@ -67,7 +67,7 @@ def index():
 <a href="/status">Display status</a><br/>
 <a href="/log">Display log</a><br/>
 <a href="/camera">Webcam photo</a><br/>
-<a href="/watch.html">Watch webcam</a></br>
+<a href="/static/watch.html">Watch webcam</a></br>
 <a href="/reboot">Reboot system</a><br/>
 """
 
