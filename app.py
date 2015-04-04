@@ -12,6 +12,7 @@ usbipd      = "usbipd"
 modprobe    = "/sbin/modprobe"
 reboot      = "/sbin/reboot"
 pidfile     = "/var/run/usbipd.pid"
+photo       = "/tmp/photo.bmp"
 basedir     = os.path.dirname(os.path.realpath(__file__))
 os.environ["PATH"] += os.pathsep + "/sbin/"
 os.environ["PATH"] += os.pathsep + "/bin"
@@ -57,6 +58,7 @@ def index():
 <a href="/attach">Attach default device</a><br/>
 <a href="/detach">Detach default device</a><br/>
 <a href="/status">Display status</a><br/>
+<a href="/camera">Webcam :D</a><br/>
 <a href="/reboot">Reboot system</a><br/>
 """
 
@@ -84,6 +86,18 @@ def status():
 @app.route("/device")
 def device():
     return "selected device: " + Settings.device_id
+
+@app.route("/camera")
+def camera():
+    import pygame.camera
+    pygame.camera.init()
+    cam = pygame.camera.Camera(pygame.camera.list_cameras()[0])
+    cam.start()
+    img = cam.get_image()
+    import pygame.image
+    pygame.image.save(img, photo)
+    pygame.camera.quit()
+    return send_file(photo, "image/bmp")
 
 @app.errorhandler(subprocess.CalledProcessError)
 def handle_invalid_usage(error):
