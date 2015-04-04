@@ -12,6 +12,7 @@ usbipd      = "usbipd"
 modprobe    = "/sbin/modprobe"
 reboot      = "/sbin/reboot"
 pidfile     = "/var/run/usbipd.pid"
+usbipd_log  = "/var/log/usbipd.log"
 basedir     = os.path.dirname(os.path.realpath(__file__))
 os.environ["PATH"] += os.pathsep + "/sbin/"
 os.environ["PATH"] += os.pathsep + "/bin"
@@ -34,19 +35,22 @@ def load_module(name):
 def setup():
     print("loading...")
     load_module("usbip-core")
+
     load_module("usbip-host")    
     print("starting daemon..")
-    process = subprocess.Popen([usbipd, "-D"])
-    open(pidfile, 'w').write(str(process.pid))
+    os.system(usbipd + " --debug --pid " + pidfile + " > " + usbipd_log + " 2>&1 &")
     Settings.device_id = open(basedir + "/conf/device").read().strip()
     print(Settings.device_id)
     print("....done!")
 
 def shutdown():
     print("shutting down...")
-    pid = int(open(pidfile).read())
-    os.kill(pid, signal.SIGKILL)
-    os.remove(pidfile)
+    try:
+        pid = int(open(pidfile).read())
+        os.kill(pid, signal.SIGKILL)
+        os.remove(pidfile)
+    except:
+        print("no pid file or couldn't kill")
     print("...done!")   
 
 @app.route("/")
@@ -57,6 +61,7 @@ def index():
 <a href="/attach">Attach default device</a><br/>
 <a href="/detach">Detach default device</a><br/>
 <a href="/status">Display status</a><br/>
+<a href="/log">Display log</a><br/>
 <a href="/reboot">Reboot system</a><br/>
 """
 
@@ -66,11 +71,11 @@ def list():
 
 @app.route("/attach")
 def attach():
-    return call([usbip, "bind", "-b", Settings.device_id])
+    return call([usbip, "--debug", "bind", "-b", Settings.device_id])
 
 @app.route("/detach")
 def detach():
-    return call([usbip, "unbind", "-b", Settings.device_id])
+    return call([usbip, "--debug", "unbind", "-b", Settings.device_id])
 
 @app.route("/reboot")
 def reboot():
@@ -84,6 +89,11 @@ def status():
 @app.route("/device")
 def device():
     return "selected device: " + Settings.device_id
+
+@app.route("/log")
+def log():
+    file = open(usbipd_log)
+    return file.read()
 
 @app.errorhandler(subprocess.CalledProcessError)
 def handle_invalid_usage(error):
