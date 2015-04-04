@@ -66,7 +66,8 @@ def index():
 <a href="/detach">Detach default device</a><br/>
 <a href="/status">Display status</a><br/>
 <a href="/log">Display log</a><br/>
-<a href="/camera">Webcam :D</a><br/>
+<a href="/camera">Webcam photo</a><br/>
+<a href="/watch.html">Watch webcam</a></br>
 <a href="/reboot">Reboot system</a><br/>
 """
 
