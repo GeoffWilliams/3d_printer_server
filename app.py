@@ -2,6 +2,8 @@ from flask import Flask
 from flask import jsonify
 import subprocess
 import getpass
+import os
+import signal
 
 app         = Flask(__name__)
 usbip       = "usbip"
@@ -9,6 +11,7 @@ usbipd      = "usbipd"
 modprobe    = "/sbin/modprobe"
 reboot      = "/sbin/reboot"
 pidfile     = "/var/run/usbipd.pid"
+basedir     = os.path.dirname(os.path.realpath(__file__))
 
 class Settings(Flask):
     device_id   = False
@@ -23,22 +26,23 @@ def load_module(name):
 	print("error loading kernel module %(output)s" % error.output)
         
 
-@app.before_first_request
 def setup():
-    print "loading..."
+    print("loading...")
     load_module("usbip-core")
     load_module("usbip-host")    
-    print "starting daemon.."
+    print("starting daemon..")
     process = subprocess.Popen([usbipd, "-D"])
     open(pidfile, 'w').write(str(process.pid))
-    Settings.device_id = open("./conf/device").read().strip()
-    print Settings.device_id
-    print "....done!"
+    Settings.device_id = open(basedir + "/conf/device").read().strip()
+    print(Settings.device_id)
+    print("....done!")
 
 def shutdown():
+    print("shutting down...")
     pid = int(open(pidfile).read())
     os.kill(pid, signal.SIGKILL)
-   
+    print("...done!")   
+
 @app.route("/")
 def index():
     return """
@@ -78,16 +82,21 @@ def device():
 def handle_invalid_usage(error):
     response = jsonify(
         output=error.output,
-	cmd=error.cmd,
+        cmd=error.cmd,
         returncode=error.returncode)
     return response
 
 @app.errorhandler(500)
 def internal_error(error):
-    return "error: " + str(error)
+    response = jsonify(
+        returncode=500,
+        message=str(error))
+    return response
 
 if __name__ == "__main__":
     if getpass.getuser() == "root":
+        setup()
         app.run(host= '0.0.0.0')
+        shutdown()
     else:
         print "Server must be run as root for now!"
