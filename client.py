@@ -3,18 +3,39 @@ import argparse
 import subprocess
 import urllib2
 import getpass
+import time
+import sys
 
 modprobe = "modprobe"
 device   = False
 host     = False
 base_url = False
-usbip    = "/home/geoff/src/linux-3.13/drivers/staging/usbip/userspace/src/usbip"
+usbip    = "/home/geoff/src/linux-3.19.3/tools/usb/usbip/src/usbip"
 port     = "5000"
 
 
 def call(cmd):
     print cmd
     return subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=False)
+
+def request(url):
+    requested = False
+    while not requested:
+        try:
+            data = urllib2.urlopen(url, None, 1)
+            message = data.read()
+            if data.getcode() == 200:
+                requested = True
+                print("*** succeeded! " + message + "***")
+            else:
+                print("error requesting: " + message)
+        except:
+            sys.stdout.write(".")
+            sys.stdout.flush()
+        
+        if not requested:
+            time.sleep(1)
+    
 
 def setup():
     global device, host, base_url
@@ -34,7 +55,7 @@ def plug():
     print usbip 
     setup()
     print "connecting remote device"
-    print urllib2.urlopen(base_url + "/attach").read()
+    request(base_url + "/attach")
     print "connecting local device"
     print call([usbip, "attach",  "-r",  host, "-b", device])
 
@@ -42,27 +63,36 @@ def unplug():
     print "disconnecting local device"
     print call([usbip, "detach", "-r", host, "-b", device])
     print "disconnecting remote device"
-    print urllib2.urlopen(base_url + "/detach").read()
+    request(base_url + "/detach")
+
+def main():
+    parser = argparse.ArgumentParser(description="plug/unplug usbip device")
+    parser.add_argument("--plug", dest="plug", action="store_true", 
+                        default=False,
+                        help="connect to device")
+    parser.add_argument("--unplug", dest="unplug", action="store_true", 
+                        default=False,
+                        help="disconnect from device")
+    args = parser.parse_args()
 
 
-parser = argparse.ArgumentParser(description="plug/unplug usbip device")
-parser.add_argument("--plug", dest="plug", action="store_true", default=False,
-                    help="connect to device")
-parser.add_argument("--unplug", dest="unplug", action="store_true", default=False,
-                    help="disconnect from device")
-args = parser.parse_args()
+    if getpass.getuser() == "root":
+        if args.unplug and args.plug:
+            parser.print_help()
+        elif args.unplug:
+            print "unplugging device..."
+            unplug()
+        elif args.plug:
+            print "plugging in device..."
+            plug()
+        else: 
+            parser.print_help()
+    else:
+        print("must be run as root for now!")
 
 
-if getpass.getuser() == "root":
-    if args.unplug and args.plug:
-        parser.print_help()
-    elif args.unplug:
-        print "unplugging device..."
-        unplug()
-    elif args.plug:
-        print "plugging in device..."
-        plug()
-    else: 
-        parser.print_help()
-else:
-    print("must be run as root for now!")
+try:
+    main()
+except subprocess.CalledProcessError as error:
+    print error.cmd
+    print error.output
