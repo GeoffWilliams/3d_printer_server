@@ -1,10 +1,13 @@
 from flask import Flask
 from flask import jsonify
+from flask import send_file
 import subprocess
 import getpass
 import os
 import signal
 import sys
+import pygame.camera
+import pygame.image
 
 app         = Flask(__name__)
 usbip       = "usbip"
@@ -99,13 +102,12 @@ def log():
 
 @app.route("/camera")
 def camera():
-    import pygame.camera
     pygame.camera.init()
     cam = pygame.camera.Camera(pygame.camera.list_cameras()[0])
     cam.start()
     img = cam.get_image()
-    import pygame.image
     pygame.image.save(img, photo)
+    cam.stop()
     pygame.camera.quit()
     return send_file(photo, "image/bmp")
 
