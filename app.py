@@ -4,6 +4,7 @@ import subprocess
 import getpass
 import os
 import signal
+import sys
 
 app         = Flask(__name__)
 usbip       = "usbip"
@@ -12,6 +13,10 @@ modprobe    = "/sbin/modprobe"
 reboot      = "/sbin/reboot"
 pidfile     = "/var/run/usbipd.pid"
 basedir     = os.path.dirname(os.path.realpath(__file__))
+os.environ["PATH"] += os.pathsep + "/sbin/"
+os.environ["PATH"] += os.pathsep + "/bin"
+os.environ["PATH"] += os.pathsep + "/usr/bin"
+os.environ["PATH"] += os.pathsep + "/usr/local/sbin"
 
 class Settings(Flask):
     device_id   = False
@@ -41,6 +46,7 @@ def shutdown():
     print("shutting down...")
     pid = int(open(pidfile).read())
     os.kill(pid, signal.SIGKILL)
+    os.remove(pidfile)
     print("...done!")   
 
 @app.route("/")
@@ -68,7 +74,8 @@ def detach():
 
 @app.route("/reboot")
 def reboot():
-    return call([reboot])
+    os.system("reboot")
+    #return call([reboot])
 
 @app.route("/status")
 def status():
