@@ -52,7 +52,6 @@ def load_modules():
     call([modprobe, "usbip-core"])
  
 def plug():
-    print usbip 
     setup()
     print "connecting remote device"
     request(base_url + "/attach")
@@ -60,6 +59,7 @@ def plug():
     print call([usbip, "attach",  "-r",  host, "-b", device])
 
 def unplug():
+    setup()
     print "disconnecting local device"
     print call([usbip, "detach", "-r", host, "-b", device])
     print "disconnecting remote device"
