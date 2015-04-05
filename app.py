@@ -1,6 +1,9 @@
 from flask import Flask
 from flask import jsonify
 from flask import send_file
+from flask import Response
+from StringIO import StringIO
+from PIL import Image
 import subprocess
 import getpass
 import os
@@ -8,8 +11,11 @@ import signal
 import sys
 import pygame.camera
 import pygame.image
+import time
 
 app         = Flask(__name__)
+cam         = None
+video_size  = (640,480)
 usbip       = "usbip"
 usbipd      = "usbipd"
 modprobe    = "/sbin/modprobe"
@@ -37,6 +43,7 @@ def load_module(name):
         
 
 def setup():
+    global cam
     print("loading...")
     load_module("usbip-core")
 
@@ -45,14 +52,26 @@ def setup():
     os.system(usbipd + " --debug --pid " + pidfile + " > " + usbipd_log + " 2>&1 &")
     Settings.device_id = open(basedir + "/conf/device").read().strip()
     print(Settings.device_id)
+
+    # setup webcam
+    pygame.camera.init()
+    cam = pygame.camera.Camera(pygame.camera.list_cameras()[0])
+    cam.start()
+
     print("....done!")
 
 def shutdown():
     print("shutting down...")
     try:
+        # webcam off
+        cam.stop()
+        pygame.camera.quit()
+
+        # usbipd kill
         pid = int(open(pidfile).read())
         os.kill(pid, signal.SIGKILL)
         os.remove(pidfile)
+
     except:
         print("no pid file or couldn't kill")
     print("...done!")   
@@ -68,6 +87,8 @@ def index():
 <a href="/log">Display log</a><br/>
 <a href="/camera">Webcam photo</a><br/>
 <a href="/static/watch.html">Watch webcam</a></br>
+<a href="/video">Webcam video</a><br/>
+<hr/>
 <a href="/reboot">Reboot system</a><br/>
 """
 
@@ -103,14 +124,28 @@ def log():
 
 @app.route("/camera")
 def camera():
-    pygame.camera.init()
-    cam = pygame.camera.Camera(pygame.camera.list_cameras()[0])
-    cam.start()
     img = cam.get_image()
     pygame.image.save(img, photo)
-    cam.stop()
-    pygame.camera.quit()
     return send_file(photo, "image/bmp")
+
+@app.route("/video")
+def video():
+    def generate():
+        surface = pygame.Surface(video_size)
+        while True:
+            if cam.query_image():
+                cam.get_image(surface)
+                data = pygame.image.tostring(surface, "RGBA")
+                img = Image.fromstring("RGBA", video_size, data)
+                zdata = StringIO()
+                img.save(zdata, "JPEG")
+                frame = zdata.getvalue()
+
+                yield ( b'--frame\r\n'
+                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+    return Response(generate(), 
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.errorhandler(subprocess.CalledProcessError)
 def handle_invalid_usage(error):
