@@ -30,47 +30,47 @@ This may be fixed in the future, or it may not.
 ## OK how do I use this?
 
 ### Server
-1) get a raspberry PI and install rasbian on it
-2) make it accessible over the network
-3) install usbip by obtaining the kernel source from git and compiling the
+1. get a raspberry PI and install rasbian on it
+2. make it accessible over the network
+3. install usbip by obtaining the kernel source from git and compiling the
    usbip userspace driver.  DO NOT use the usbip package available via apt-get
    it needs to match the running kernel!
-4) checkout this code onto your Rasberry PI somewhere
-5) plug-in the 3D printer and webcam
-6) install required libraries:
+4. checkout this code onto your Rasberry PI somewhere
+5. plug-in the 3D printer and webcam
+6. install required libraries:
 ```
 sudo apt-get install python-imaging python-pygame python-flask
 ```
-7) add a line to /etc/rc.local that looks something like
+7. add a line to /etc/rc.local that looks something like
 ```
 python /path/to/code/3d_printer_server/app.py > /var/log/usbip.log 2>&1 &
 ```
-8) edit ./conf/device to be the bus id of the printer device `usbip list -l`
+8. edit ./conf/device to be the bus id of the printer device `usbip list -l`
    to lookup your devices
-9) start the daemon
+9. start the daemon
 ```
 sudo /path/to/code/3d_printer_server/app.py
 ```
-10) type the IP of your Rasberry PI into a browser and head to port 5000
-11) if it doesn't work, look in the logfile above and also usbipd.log
+10. type the IP of your Rasberry PI into a browser and head to port 5000
+11. if it doesn't work, look in the logfile above and also usbipd.log
 
 ### Client
 The client code is configured to connect to the host listed in `./conf/host` 
 on port 5000 and will also read the device name from the `./conf/device` file
 To setup client:
-1) checkout the code somewhere
-2) install usbip - on ubuntu/debian its in the `linux-tools-generic` package.
+1. checkout the code somewhere
+2. install usbip - on ubuntu/debian its in the `linux-tools-generic` package.
    Remove the `usbip` package if it exists!
-3) fix the path to usbip in client.pp (nasty hack for moment)
-4) check correct hostname and device in `./conf/host` and `./conf/device`
-5) try and connect
+3. fix the path to usbip in client.pp (nasty hack for moment)
+4. check correct hostname and device in `./conf/host` and `./conf/device`
+5. try and connect
 ```
 sudo ./client.py --plug
 ```
-6) if this works, start virtual box and righ click the usb icon in the bottom
+6. if this works, start virtual box and righ click the usb icon in the bottom
    right corner, then select your printer.  Windows should detect the printer
    and you can send it a test job
-7) Check the progress of your print using the cool webcam feed feature :)
+7. Check the progress of your print using the cool webcam feed feature :)
 
 ## Can I get help with this?
 I'd love to buy my free time is very limited.  This is experimental software
