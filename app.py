@@ -11,7 +11,7 @@ import signal
 import sys
 import pygame.camera
 import pygame.image
-import time
+from time import sleep
 
 app         = Flask(__name__)
 cam         = None
@@ -140,6 +140,8 @@ def video():
                 zdata = StringIO()
                 img.save(zdata, "JPEG")
                 frame = zdata.getvalue()
+                # must allow other processes to run
+                sleep(0.1) 
 
                 yield ( b'--frame\r\n'
                         b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')

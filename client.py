@@ -6,6 +6,7 @@ import getpass
 import time
 import sys
 
+rmmod    = "rmmod"
 modprobe = "modprobe"
 device   = False
 host     = False
@@ -61,7 +62,8 @@ def plug():
 def unplug():
     setup()
     print "disconnecting local device"
-    print call([usbip, "detach", "-r", host, "-b", device])
+    print call([rmmod, "vhci_hcd"])
+    print call([rmmod, "usbip-core"])
     print "disconnecting remote device"
     request(base_url + "/detach")
 
