@@ -11,7 +11,7 @@ modprobe = "modprobe"
 device   = False
 host     = False
 base_url = False
-usbip    = "/home/geoff/src/linux-3.19.3/tools/usb/usbip/src/usbip"
+usbip    = "usbip"
 port     = "5000"
 
 
